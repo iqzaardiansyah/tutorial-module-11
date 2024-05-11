@@ -28,3 +28,217 @@
     Replace `<namespace>` with the name of the namespace where we created the resources. This will list pods and services specifically from that namespace. If we created resources in the `default` namespace and want to see them, we can simply omit the `-n` option, as resources from the `default` namespace are listed by default.
 
 </details>
+
+<details>
+<summary>Tutorial: Rolling Update Deployment</summary>
+
+1. What is the difference between Rolling Update and Recreate deployment strategy?
+
+    Rolling Update and Recreate are two different deployment strategies in Kubernetes, each with its own characteristics and use cases:
+
+    - **Rolling Update**:
+      - **Strategy**: Rolling Update performs a rolling update of the pods in a deployment. It gradually replaces old pods with new ones, ensuring that there is no downtime during the update process.
+      - **Process**: Rolling Update deploys new pods incrementally while gradually scaling down the old pods. It monitors the health of the new pods before scaling down the old ones, ensuring that the application remains available and responsive throughout the update.
+      - **Benefits**:
+        - Zero downtime: Rolling Update ensures that the application remains available to users throughout the update process.
+        - Controlled deployment: Updates are applied gradually, allowing for monitoring and validation of the new pods before fully transitioning to the new version.
+      - **Drawbacks**:
+        - Longer deployment time: Rolling Update may take longer to complete compared to Recreate, especially for large deployments, as it deploys updates gradually.
+
+    - **Recreate**:
+      - **Strategy**: Recreate simply terminates all existing pods and creates new ones with the updated configuration. It effectively stops the old version of the application and starts the new version all at once.
+      - **Process**: Recreate terminates all existing pods in the deployment before creating new ones with the updated configuration. This results in a brief period of downtime during the update process.
+      - **Benefits**:
+        - Simplicity: Recreate is a straightforward deployment strategy that stops the old version and starts the new version, making it easy to understand and implement.
+        - Predictable behavior: Recreate ensures that the application is fully updated once the deployment process completes.
+      - **Drawbacks**:
+        - Downtime: Recreate results in a brief period of downtime during the update process, as all existing pods are terminated before new ones are created.
+        - Potential impact on users: Depending on the application's requirements, downtime during updates may not be acceptable for some users or applications.
+
+   In summary, Rolling Update is preferred for deployments that require zero downtime and gradual updates, while Recreate may be suitable for simpler deployments where a brief period of downtime is acceptable or when updates need to be applied quickly and predictably.
+
+2. Try deploying the Spring Petclinic REST using Recreate deployment strategy and document your attempt.
+
+    ![](https://i.imgur.com/9lrvQ0U.png)
+    Here are the detailed steps to deploy the Spring Petclinic REST application on Minikube using the Recreate deployment strategy:
+
+    1. **Start Minikube**:
+        Start Minikube with the following command:
+
+        ```bash
+        minikube start
+        ```
+
+        This command will start a local Kubernetes cluster using Minikube.
+
+    2. **Enable Metrics Server**:
+        Enable the Metrics Server addon to allow monitoring of resource usage:
+
+        ```bash
+        minikube addons enable metrics-server
+        ```
+
+        This command installs the Metrics Server addon, which collects resource metrics from pods and nodes in the cluster.
+
+    3. **Create Deployment YAML**:
+        Create a deployment YAML file named `petclinic-deployment.yaml` with the following content:
+
+        ```yaml
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+            name: spring-petclinic-rest
+        spec:
+            replicas: 3
+            selector:
+            matchLabels:
+                app: spring-petclinic-rest
+            template:
+            metadata:
+                labels:
+                app: spring-petclinic-rest
+            spec:
+                containers:
+                - name: spring-petclinic-rest
+                image: docker.io/springcommunity/spring-petclinic-rest:3.2.1
+                ports:
+                - containerPort: 9966
+            strategy:
+            type: Recreate
+        ```
+
+        This YAML file defines a Deployment resource named `spring-petclinic-rest` with the Recreate deployment strategy. It specifies the image for the Spring Petclinic REST application and exposes port 9966.
+
+    4. **Create Service YAML**:
+        Create a service YAML file named `petclinic-service.yaml` with the following content:
+
+        ```yaml
+        apiVersion: v1
+        kind: Service
+        metadata:
+            name: spring-petclinic-rest
+        spec:
+            type: LoadBalancer
+            selector:
+            app: spring-petclinic-rest
+            ports:
+            - protocol: TCP
+            port: 9966
+            targetPort: 9966
+        ```
+
+        This YAML file defines a Service resource named `spring-petclinic-rest` of type LoadBalancer. It directs traffic to pods with the label `app: spring-petclinic-rest` on port 9966.
+
+    5. **Apply Deployment YAML**:
+        Apply the deployment YAML using the following command:
+
+        ```bash
+        kubectl apply -f petclinic-deployment.yaml
+        ```
+
+        This command creates the Deployment resource in the Kubernetes cluster.
+
+    6. **Apply Service YAML**:
+        Apply the service YAML using the following command:
+
+        ```bash
+        kubectl apply -f petclinic-service.yaml
+        ```
+
+        This command creates the Service resource in the Kubernetes cluster.
+
+    7. **Verify Deployment**:
+        Check the status of the deployment and service to ensure they have been created successfully:
+
+        ```bash
+        kubectl get deployments
+        kubectl get services
+        ```
+
+        These commands will show the status and details of the deployed resources.
+
+    8. **Access the Application**:
+        Once the service is ready, we can access the Spring Petclinic REST application using the Minikube service:
+
+        ```bash
+        minikube service spring-petclinic-rest
+        ```
+
+        This command will open the application in the systems default web browser.
+
+3. Prepare different manifest files for executing Recreate deployment strategy.
+
+    Here are the manifest files for deploying the Spring Petclinic REST application using the Recreate deployment strategy:
+
+    1. **petclinic-deployment.yaml**:
+
+        ```yaml
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+            name: spring-petclinic-rest
+        spec:
+            replicas: 3
+            selector:
+            matchLabels:
+                app: spring-petclinic-rest
+            template:
+            metadata:
+                labels:
+                app: spring-petclinic-rest
+            spec:
+                containers:
+                - name: spring-petclinic-rest
+                image: docker.io/springcommunity/spring-petclinic-rest:3.2.1
+                ports:
+                - containerPort: 9966
+            strategy:
+            type: Recreate
+        ```
+
+    2. **petclinic-service.yaml**:
+
+        ```yaml
+        apiVersion: v1
+        kind: Service
+        metadata:
+            name: spring-petclinic-rest
+        spec:
+            type: LoadBalancer
+            selector:
+            app: spring-petclinic-rest
+            ports:
+            - protocol: TCP
+            port: 9966
+            targetPort: 9966
+        ```
+
+    These manifest files define a Deployment resource with the name `spring-petclinic-rest` and a Service resource with the same name. The Deployment resource specifies the Recreate deployment strategy, which recreates all pods when updates are applied. The Service resource exposes the application on port 9966 using a LoadBalancer type service. 
+
+    These files can be applied using `kubectl apply -f <filename.yaml>` command. Adjust the image version or other parameters as needed for specific setup.
+
+4. What do you think are the benefits of using Kubernetes manifest files? Recall your experience in deploying the app manually and compare it to your experience when deploying the same app by applying the manifest files (i.e., invoking `kubectl apply -f` command) to the cluster.
+
+    Using Kubernetes manifest files provides several benefits:
+
+   1. **Infrastructure as Code (IaC)**: Manifest files allow us to define the application's infrastructure in a declarative manner using code. This makes it easy to version control, track changes, and manage infrastructure configurations alongside application code.
+
+   2. **Reproducibility**: Manifest files ensure that the deployments are consistent across environments. By defining the desired state of the application in code, we can easily reproduce deployments in different environments, reducing the risk of configuration drift.
+
+   3. **Automation**: Kubernetes manifest files can be automated using continuous integration and continuous deployment (CI/CD) pipelines. This enables automation of the deployment process, reducing manual intervention and potential errors.
+
+   4. **Visibility and Transparency**: Manifest files provide a clear and transparent view of the application's configuration. We can easily see the desired state of the application and track changes over time.
+
+   5. **Idempotent Operations**: Applying manifest files using `kubectl apply -f` command ensures idempotent operations. Kubernetes reconciles the desired state defined in the manifest files with the current state of the cluster, ensuring that only necessary changes are applied.
+
+   Comparing the experience of deploying an application manually versus using manifest files, deploying with manifest files offers:
+
+   - **Consistency**: With manifest files, deployments are consistent and reproducible across environments. Manual deployments may lead to discrepancies between environments due to human error or differences in execution.
+
+   - **Efficiency**: Using manifest files streamlines the deployment process, as we can define all configurations in code and apply them to the cluster with a single command. This reduces the time and effort required for deployment compared to manual steps.
+
+   - **Version Control**: Manifest files can be version controlled using Git or other version control systems. This allows us to track changes, revert to previous configurations if needed, and collaborate with team members more effectively.
+
+   Overall, using Kubernetes manifest files enhances the deployment process by providing a standardized, automated, and version-controlled approach to managing application infrastructure.
+
+</details>
