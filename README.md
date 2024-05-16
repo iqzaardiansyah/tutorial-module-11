@@ -59,7 +59,9 @@
 
 2. Try deploying the Spring Petclinic REST using Recreate deployment strategy and document your attempt.
 
-    ![](https://i.imgur.com/9lrvQ0U.png)
+    ![](https://i.imgur.com/31KpyFz.png)
+    ![](https://i.imgur.com/tKXgZUR.png)
+    ![](https://i.imgur.com/lyXYWao.png)
     Here are the detailed steps to deploy the Spring Petclinic REST application on Minikube using the Recreate deployment strategy:
 
     1. **Start Minikube**:
@@ -79,138 +81,118 @@
         ```
 
         This command installs the Metrics Server addon, which collects resource metrics from pods and nodes in the cluster.
-
-    3. **Create Deployment YAML**:
-        Create a deployment YAML file named `petclinic-deployment.yaml` with the following content:
-
-        ```yaml
-        apiVersion: apps/v1
-        kind: Deployment
-        metadata:
-            name: spring-petclinic-rest
-        spec:
-            replicas: 3
-            selector:
-            matchLabels:
-                app: spring-petclinic-rest
-            template:
-            metadata:
-                labels:
-                app: spring-petclinic-rest
-            spec:
-                containers:
-                - name: spring-petclinic-rest
-                image: docker.io/springcommunity/spring-petclinic-rest:3.2.1
-                ports:
-                - containerPort: 9966
-            strategy:
-            type: Recreate
-        ```
-
-        This YAML file defines a Deployment resource named `spring-petclinic-rest` with the Recreate deployment strategy. It specifies the image for the Spring Petclinic REST application and exposes port 9966.
-
-    4. **Create Service YAML**:
-        Create a service YAML file named `petclinic-service.yaml` with the following content:
-
-        ```yaml
-        apiVersion: v1
-        kind: Service
-        metadata:
-            name: spring-petclinic-rest
-        spec:
-            type: LoadBalancer
-            selector:
-            app: spring-petclinic-rest
-            ports:
-            - protocol: TCP
-            port: 9966
-            targetPort: 9966
-        ```
-
-        This YAML file defines a Service resource named `spring-petclinic-rest` of type LoadBalancer. It directs traffic to pods with the label `app: spring-petclinic-rest` on port 9966.
-
-    5. **Apply Deployment YAML**:
-        Apply the deployment YAML using the following command:
+    
+    3. **Apply `recreate-deployment-before.yaml`**:
+        Apply `recreate-deployment-before.yaml` to create a Deployment with the following command
 
         ```bash
-        kubectl apply -f petclinic-deployment.yaml
+        kubectl apply -f recreate-deployment-before.yaml
         ```
 
-        This command creates the Deployment resource in the Kubernetes cluster.
-
-    6. **Apply Service YAML**:
-        Apply the service YAML using the following command:
+    4. **Apply `service.yaml`**:
+        Apply `service.yaml` to create a Service that exposes the Deployment created previously with the following command
 
         ```bash
-        kubectl apply -f petclinic-service.yaml
+        kubectl apply -f service.yaml
         ```
-
-        This command creates the Service resource in the Kubernetes cluster.
-
-    7. **Verify Deployment**:
-        Check the status of the deployment and service to ensure they have been created successfully:
+    
+    5. **Update the Deployment**:
+        Update the Deployment to use the latest version of `spring-petclinic-rest` using the Recreate Deployment method by deploying a similar file as `recreate-deployment-before.yaml` but the image tag is changed to the latest.
 
         ```bash
-        kubectl get deployments
-        kubectl get services
+       kubectl apply -f recreate-deployment-after.yaml
         ```
-
-        These commands will show the status and details of the deployed resources.
-
-    8. **Access the Application**:
-        Once the service is ready, we can access the Spring Petclinic REST application using the Minikube service:
-
-        ```bash
-        minikube service spring-petclinic-rest
-        ```
-
-        This command will open the application in the systems default web browser.
 
 3. Prepare different manifest files for executing Recreate deployment strategy.
 
     Here are the manifest files for deploying the Spring Petclinic REST application using the Recreate deployment strategy:
 
-    1. **petclinic-deployment.yaml**:
+    1. **recreate-deployment-before.yaml**:
 
         ```yaml
         apiVersion: apps/v1
         kind: Deployment
         metadata:
+            labels:
+                app: spring-petclinic-rest
             name: spring-petclinic-rest
         spec:
-            replicas: 3
+            replicas: 4
             selector:
-            matchLabels:
-                app: spring-petclinic-rest
-            template:
-            metadata:
-                labels:
-                app: spring-petclinic-rest
-            spec:
-                containers:
-                - name: spring-petclinic-rest
-                image: docker.io/springcommunity/spring-petclinic-rest:3.2.1
-                ports:
-                - containerPort: 9966
+                matchLabels:
+                    app: spring-petclinic-rest
             strategy:
-            type: Recreate
+                type: Recreate
+            template:
+                metadata:
+                    labels:
+                        app: spring-petclinic-rest
+                spec:
+                    containers:
+                    - image: docker.io/springcommunity/spring-petclinic-rest:3.0.2
+                        name: spring-petclinic-rest
         ```
 
-    2. **petclinic-service.yaml**:
+    2. **service.yaml**:
 
         ```yaml
         apiVersion: v1
         kind: Service
         metadata:
+        creationTimestamp: "2024-05-11T14:52:39Z"
+        labels:
+            app: spring-petclinic-rest
+        name: spring-petclinic-rest
+        namespace: default
+        resourceVersion: "3920"
+        uid: 45e9aa85-76a3-46a8-869f-9ae953930f82
+        spec:
+        allocateLoadBalancerNodePorts: true
+        clusterIP: 10.102.156.230
+        clusterIPs:
+        - 10.102.156.230
+        externalTrafficPolicy: Cluster
+        internalTrafficPolicy: Cluster
+        ipFamilies:
+        - IPv4
+        ipFamilyPolicy: SingleStack
+        ports:
+        - nodePort: 32697
+            port: 9966
+            protocol: TCP
+            targetPort: 9966
+        selector:
+            app: spring-petclinic-rest
+        sessionAffinity: None
+        type: LoadBalancer
+        status:
+        loadBalancer: {}
+        ```
+
+    3. **recreate-deployment-after.yaml**:
+
+        ```yaml
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+            labels:
+                app: spring-petclinic-rest
             name: spring-petclinic-rest
         spec:
-            type: LoadBalancer
+            replicas: 4
             selector:
-            app: spring-petclinic-rest
-            ports:
-            - protocol: TCP
-            port: 9966
-            targetPort: 9966
+                matchLabels:
+                    app: spring-petclinic-rest
+            strategy:
+                type: Recreate
+            template:
+                metadata:
+                    labels:
+                        app: spring-petclinic-rest
+                spec:
+                    containers:
+                    - image: docker.io/springcommunity/spring-petclinic-rest:latest
+                        name: spring-petclinic-rest
         ```
 
     These manifest files define a Deployment resource with the name `spring-petclinic-rest` and a Service resource with the same name. The Deployment resource specifies the Recreate deployment strategy, which recreates all pods when updates are applied. The Service resource exposes the application on port 9966 using a LoadBalancer type service. 
